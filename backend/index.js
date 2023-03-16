@@ -17,8 +17,8 @@ app.listen(PORT, () => console.log(`listening on http://localhost:${PORT}`));
 
 app.use(express.json());
 
-const purgeOlderThanWeek = () => {
-  pool.query('DELETE FROM logs WHERE date < CURRENT_DATE - MAKE_INTERVAL(days => 7);')//now - 7
+const purgeOlderThanTwoWeek = () => {
+  pool.query('DELETE FROM logs WHERE date < CURRENT_DATE - MAKE_INTERVAL(days => 14);')//now - 14
 };
 
 //launch puppeteer
@@ -36,7 +36,7 @@ const updateData = () => {
       pool.query(`INSERT INTO logs (count, date, time) VALUES (${occupancy}, CURRENT_DATE, DATE_TRUNC('minute', NOW())::time);`);
       await browser.close();
   });
-  purgeOlderThanWeek();
+  purgeOlderThanTwoWeek();
 };
 
 //returns the lowest occupancy time in interval
@@ -44,12 +44,18 @@ const updateData = () => {
 //time in format XX:XX
 const bestTimeInInterval = (start, end) => { 
 
-  pool.query('SELECT * '
-  + 'FROM logs '
-  + 'WHERE count = (SELECT MIN(count) FROM logs)'
-  + `AND time BETWEEN '${start[1]}'::time AND '${end[1]}'::time;`
-  + `AND date BETWEEN `)
-    .then((res) => console.log(res.rows[0].time + " " + res.rows[0].count));
+  const startDate = getLastDay(start[0]);
+  const endDate = getLastDay(end[0]);
+
+  const dateQuery = 'SELECT * FROM logs '
+  + 'WHERE count = (SELECT MIN(count) FROM logs '
+  + `WHERE time BETWEEN '${start[1]}'::time AND '${end[1]}'::time `
+  + `AND date BETWEEN '${startDate}'::date AND '${endDate}'::date);`
+
+  console.log(dateQuery);
+
+  pool.query(dateQuery)
+    .then((res) => console.log(res.rows));
 };
 
 //setInterval(updateData, 5000);
@@ -68,14 +74,21 @@ const getLastDay = (day) => {
   const date = new Date();
   const currDay = date.getDay();
 
+  /*
   if (currDay > day) {
     date.setDate(date.getDate() - date.getDay() + day);
-    return date.getFullYear() + '-' + ;
+    return date.getUTCFullYear() + '-' +
+      ('00' + (date.getUTCMonth()+1)).slice(-2) + '-' +
+      ('00' + date.getUTCDate()).slice(-2);
   }
-  date.setDate(date.getDate() - date.getDay() - 7 + day);
-  return date.toString();
+  */
+  date.setDate(date.getDate() - date.getDay() - 8 + day);
+  return date.getUTCFullYear() + '-' +
+    ('00' + (date.getUTCMonth()+1)).slice(-2) + '-' +
+    ('00' + date.getUTCDate()).slice(-2);
 }
-console.log(getLastDay(0));
+//console.log(getLastDay(0));
+bestTimeInInterval([1, "06:00"], [7, "15:00"]);
 /*
 const date = new Date();
 date.setDate(date.getDate() - date.getDay());
