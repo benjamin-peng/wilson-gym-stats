@@ -50,7 +50,7 @@ const bestTimeInInterval = (start, end) => {
   const dateQuery = 'SELECT * FROM logs '
   + 'WHERE count = (SELECT MIN(count) FROM logs '
   + `WHERE time BETWEEN '${start[1]}'::time AND '${end[1]}'::time `
-  + `AND date BETWEEN '${startDate}'::date AND '${endDate}'::date);`
+  + `AND date BETWEEN '${startDate}'::date AND '${endDate}'::date);`;
 
   console.log(dateQuery);
 
